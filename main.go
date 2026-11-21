@@ -1,14 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/PenguinKG/gator/internal/config"
+	"github.com/PenguinKG/gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 type state struct {
 	cfg *config.Config
+	db  *database.Queries
 }
 
 func main() {
@@ -17,10 +21,20 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
+	dbURL := cfg.Url
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+	s := state{
+		cfg: &cfg,
+		db:  database.New(db),
+	}
 
-	s := state{&cfg}
 	cmds := commands{map[string]func(*state, command) error{}}
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -29,12 +43,8 @@ func main() {
 	}
 
 	name := args[1]
-	funcArgs := []string{}
-	for _, arg := range args[2:] {
-		funcArgs = append(funcArgs, arg)
-	}
 
-	currCmd := command{name, funcArgs}
+	currCmd := command{name, args[2:]}
 
 	err = cmds.run(&s, currCmd)
 	if err != nil {
