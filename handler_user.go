@@ -55,3 +55,11 @@ func handlerRegister(s *state, cmd command) error {
 	fmt.Printf("Created new user: %s (%v)\n", user.Name, user.CreatedAt)
 	return nil
 }
+
+func handlerReset(s *state, cmd command) error {
+	err := s.db.Reset(context.Background())
+	if err != nil {
+		return fmt.Errorf("Error: %w", err)
+	}
+	return nil
+}
