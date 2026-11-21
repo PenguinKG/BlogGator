@@ -2,24 +2,43 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/PenguinKG/gator/internal/config"
 )
+
+type state struct {
+	cfg *config.Config
+}
 
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
 		fmt.Printf("%v\n", err)
-		return
+		os.Exit(1)
 	}
 
-	cfg.Username = "PenguinK"
-	cfg.SetUser()
+	s := state{&cfg}
+	cmds := commands{map[string]func(*state, command) error{}}
+	cmds.register("login", handlerLogin)
 
-	cfg, err = config.Read()
+	args := os.Args
+	if len(args) < 2 {
+		fmt.Printf("%v\n", fmt.Errorf("Error: Missing Arguments"))
+		os.Exit(1)
+	}
+
+	name := args[1]
+	funcArgs := []string{}
+	for _, arg := range args[2:] {
+		funcArgs = append(funcArgs, arg)
+	}
+
+	currCmd := command{name, funcArgs}
+
+	err = cmds.run(&s, currCmd)
 	if err != nil {
-		return
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
-
-	fmt.Printf("%v\n", cfg)
 }
