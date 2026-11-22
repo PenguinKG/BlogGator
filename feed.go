@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PenguinKG/gator/internal/database"
+	"github.com/PenguinKG/BlogGator/internal/database"
 	"github.com/google/uuid"
 )
 

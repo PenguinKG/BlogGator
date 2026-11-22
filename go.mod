@@ -1,4 +1,4 @@
-module github.com/PenguinKG/gator
+module github.com/PenguinKG/BlogGator
 
 go 1.27.1
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/PenguinKG/gator/internal/config"
-	"github.com/PenguinKG/gator/internal/database"
+	"github.com/PenguinKG/BlogGator/internal/config"
+	"github.com/PenguinKG/BlogGator/internal/database"
 	_ "github.com/lib/pq"
 )
 
