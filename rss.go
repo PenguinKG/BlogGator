@@ -42,6 +42,8 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 		return nil, err
 	}
 
+	defer res.Body.Close()
+
 	feed := RSSFeed{}
 
 	err = xml.Unmarshal(data, &feed)

@@ -27,6 +27,7 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
+	defer db.Close()
 	s := state{
 		cfg: &cfg,
 		db:  database.New(db),
