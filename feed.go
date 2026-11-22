@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PenguinKG/gator/internal/database"
@@ -48,7 +50,39 @@ func scrapeFeeds(s *state) error {
 		return err
 	}
 	for _, item := range fetch.Channel.Item {
-		fmt.Printf("%s\n", item.Title)
+		now := time.Now()
+		hasDescription := item.Description != ""
+		desc := ""
+		if hasDescription {
+			desc = item.Description
+		}
+		hasPubDate := item.PubDate != ""
+		date := time.Time{}
+		if hasPubDate {
+			date, err = time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", item.PubDate)
+			if err != nil {
+				date = time.Time{}
+				hasPubDate = false
+			}
+		}
+
+		postParams := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: desc, Valid: hasDescription},
+			PublishedAt: sql.NullTime{Time: date, Valid: hasPubDate},
+			FeedID:      feed.ID,
+		}
+
+		_, err := s.db.CreatePost(context.Background(), postParams)
+		if err != nil && strings.Contains(err.Error(), `pq: duplicate key value violates unique constraint "posts_url_key"`) {
+			continue
+		} else if err != nil {
+			return fmt.Errorf("Error: %w", err)
+		}
 	}
 	return nil
 }
@@ -103,6 +137,34 @@ func handlerGetFeeds(s *state, cmd command) error {
 			return fmt.Errorf("Error: %w", err)
 		}
 		fmt.Printf("* %s (%s) [Created by: %s]\n", feed.Name, feed.Url, username)
+	}
+
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	lim := 2
+	var err error
+	if len(cmd.args) != 0 {
+		lim, err = strconv.Atoi(cmd.args[0])
+	}
+
+	if err != nil {
+		return fmt.Errorf("Error: %w", err)
+	}
+
+	postParams := database.GetPostsForUserParams{
+		Name:  user.Name,
+		Limit: int32(lim),
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), postParams)
+	for _, post := range posts {
+		fmt.Printf("* Post from %s: %s (%s)", post.FeedName, post.Title, post.Url)
+		if post.PublishedAt.Valid {
+			fmt.Printf(" [Published: %v]", post.PublishedAt.Time)
+		}
+		fmt.Printf("\n\n")
 	}
 
 	return nil
